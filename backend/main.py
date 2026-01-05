@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -16,9 +17,11 @@ from chat_manager import ChatManager
 
 app = FastAPI(title="RAG Chatbot API")
 
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "*").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins if allowed_origins != ["*"] else ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -68,7 +71,11 @@ async def startup_event():
         if all_chunks:
             vector_store.add_documents(all_chunks)
             retriever.build_bm25_index(all_chunks)
-            print(f"✓ Indexed {len(all_chunks)} chunks from {len(list(documents_path.glob('*.*')))} documents")
+            print(f"✓ Indexed {len(all_chunks)} chunks")
+
+@app.get("/")
+async def root():
+    return {"message": "RAG Chatbot API is running", "status": "healthy"}
 
 @app.post("/upload", response_model=DocumentResponse)
 async def upload_document(file: UploadFile = File(...)):
@@ -153,4 +160,5 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
