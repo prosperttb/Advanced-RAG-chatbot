@@ -6,7 +6,8 @@ from typing import List, Optional
 import shutil
 from pathlib import Path
 import uuid
-from .config import config
+
+from config import config
 from document_processor import DocumentProcessor
 from vector_store import VectorStore
 from retriever import HybridRetriever
