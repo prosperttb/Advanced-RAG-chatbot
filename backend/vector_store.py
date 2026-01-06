@@ -2,7 +2,7 @@ import chromadb
 from chromadb.config import Settings
 from sentence_transformers import SentenceTransformer
 from typing import List, Dict
-from config import config
+from backend.config import config
 
 class VectorStore:
     def __init__(self):
