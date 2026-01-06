@@ -1,22 +1,19 @@
 import os
-import uuid
-import shutil
-from pathlib import Path
-from typing import List, Optional
-
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from typing import List, Optional
+import shutil
+from pathlib import Path
+import uuid
 
-from config import config
-from document_processor import DocumentProcessor
-from vector_store import VectorStore
-from retriever import HybridRetriever
-from reranker import Reranker
-from generator import Generator
-from chat_manager import ChatManager
-
-
+from backend.config import config
+from backend.document_processor import DocumentProcessor
+from backend.vector_store import VectorStore
+from backend.retriever import HybridRetriever
+from backend.reranker import Reranker
+from backend.generator import Generator
+from backend.chat_manager import ChatManager
 app = FastAPI(title="RAG Chatbot API")
 
 allowed_origins = os.getenv("ALLOWED_ORIGINS", "*").split(",")
@@ -157,7 +154,7 @@ async def clear_documents():
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/health")
-async def health_check():0
+async def health_check():
     return {"status": "healthy", "model": config.GROQ_MODEL}
 
 if __name__ == "__main__":
