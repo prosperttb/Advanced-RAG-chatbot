@@ -7,13 +7,13 @@ import shutil
 from pathlib import Path
 import uuid
 
-from config import config
-from document_processor import DocumentProcessor
-from vector_store import VectorStore
-from retriever import HybridRetriever
-from reranker import Reranker
-from generator import Generator
-from chat_manager import ChatManager
+from backend.config import config
+from backend.document_processor import DocumentProcessor
+from backend.vector_store import VectorStore
+from backend.retriever import HybridRetriever
+from backend.reranker import Reranker
+from backend.generator import Generator
+from backend.chat_manager import ChatManager
 
 app = FastAPI(title="RAG Chatbot API")
 
@@ -161,4 +161,5 @@ async def health_check():
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PORT", 10000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
     uvicorn.run(app, host="0.0.0.0", port=port)
