@@ -17,8 +17,5 @@ class Config:
     
     DOCUMENTS_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "documents")
     UPLOADS_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "uploads")
-    CHROMA_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "chroma_db")
-    
-    EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 
 config = Config()
