@@ -163,4 +163,4 @@ async def health_check():
     return {"status": "healthy", "model": config.GROQ_MODEL}
 ```
 
-PORT=10000
+PORT=8000
