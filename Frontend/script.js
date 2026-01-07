@@ -232,8 +232,7 @@ async function handleFileUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
     
-    const validTypes = ['.pdf', '.txt', '.docx', '.doc', '.png', '.jpg', '.jpeg', '.tiff', '.bmp'];
-    const fileExt = '.' + file.name.split('.').pop().toLowerCase();
+const validTypes = ['.pdf', '.txt', '.docx', '.doc'];    const fileExt = '.' + file.name.split('.').pop().toLowerCase();
     
     if (!validTypes.includes(fileExt)) {
         uploadStatus.textContent = '✗ Invalid file type';
