@@ -1,19 +1,24 @@
 import os
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 import shutil
-from pathlib import Path
 import uuid
 
-from backend.config import config
-from backend.document_processor import DocumentProcessor
-from backend.vector_store import VectorStore
-from backend.retriever import HybridRetriever
-from backend.reranker import Reranker
-from backend.generator import Generator
-from backend.chat_manager import ChatManager
+from config import config
+from document_processor import DocumentProcessor
+from vector_store import VectorStore
+from retriever import HybridRetriever
+from reranker import Reranker
+from generator import Generator
+from chat_manager import ChatManager
+
 app = FastAPI(title="RAG Chatbot API")
 
 allowed_origins = os.getenv("ALLOWED_ORIGINS", "*").split(",")
@@ -48,8 +53,8 @@ class DocumentResponse(BaseModel):
     chunks_created: int
     filename: str
 
-Path(config.DOCUMENTS_PATH).mkdir(parents=True, exist_ok=True)
-Path(config.UPLOADS_PATH).mkdir(parents=True, exist_ok=True)
+os.makedirs(config.DOCUMENTS_PATH, exist_ok=True)
+os.makedirs(config.UPLOADS_PATH, exist_ok=True)
 
 @app.on_event("startup")
 async def startup_event():
@@ -156,8 +161,6 @@ async def clear_documents():
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "model": config.GROQ_MODEL}
+```
 
-if __name__ == "__main__":
-    import uvicorn
-    port = int(os.getenv("PORT", 10000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+PORT=10000
