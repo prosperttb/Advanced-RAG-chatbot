@@ -3,17 +3,6 @@ from typing import List, Dict
 import PyPDF2
 import docx
 from pathlib import Path
-from PIL import Image
-import os
-
-try:
-    import pytesseract
-    tesseract_path = os.getenv("TESSERACT_PATH", r'C:\Program Files\Tesseract-OCR\tesseract.exe')
-    if os.path.exists(tesseract_path):
-        pytesseract.pytesseract.tesseract_cmd = tesseract_path
-    TESSERACT_AVAILABLE = True
-except ImportError:
-    TESSERACT_AVAILABLE = False
 
 class DocumentProcessor:
     def __init__(self, chunk_size: int = 800, chunk_overlap: int = 150):
@@ -29,10 +18,8 @@ class DocumentProcessor:
             return self._load_docx(file_path)
         elif path.suffix == '.txt':
             return self._load_txt(file_path)
-        elif path.suffix.lower() in ['.png', '.jpg', '.jpeg', '.tiff', '.bmp']:
-            return self._load_image(file_path)
         else:
-            raise ValueError(f"Unsupported file format: {path.suffix}")
+            raise ValueError(f"Unsupported file format: {path.suffix}. Please upload PDF, DOCX, or TXT files.")
     
     def _load_pdf(self, file_path: str) -> str:
         text = ""
@@ -49,26 +36,6 @@ class DocumentProcessor:
     def _load_txt(self, file_path: str) -> str:
         with open(file_path, 'r', encoding='utf-8') as file:
             return file.read()
-    
-    def _load_image(self, file_path: str) -> str:
-        if not TESSERACT_AVAILABLE:
-            return "OCR functionality is not available on this server. Image text extraction is disabled. Please upload PDF, DOCX, or TXT files for text-based content."
-        
-        try:
-            import pytesseract
-            tesseract_cmd = getattr(pytesseract.pytesseract, 'tesseract_cmd', None)
-            if tesseract_cmd and not os.path.exists(tesseract_cmd):
-                return "OCR functionality is not available on this server. Image text extraction is disabled. Please upload PDF, DOCX, or TXT files for text-based content."
-            
-            image = Image.open(file_path)
-            text = pytesseract.image_to_string(image)
-            
-            if not text or len(text.strip()) < 10:
-                return "No text could be extracted from this image. The image may be blank, contain only graphics, or have low quality text."
-            
-            return text
-        except Exception as e:
-            return f"OCR functionality is not available on this server. Image text extraction failed. Please upload PDF, DOCX, or TXT files for text-based content."
     
     def chunk_text(self, text: str, metadata: Dict = None) -> List[Dict]:
         text = re.sub(r'\s+', ' ', text).strip()
@@ -120,8 +87,7 @@ class DocumentProcessor:
         if len(text_cleaned) < 50:
             raise ValueError(
                 f"Document appears to be empty or contains too little text. "
-                f"Extracted only {len(text_cleaned)} characters. "
-                f"This might be a blank document, image with no text, or corrupted file."
+                f"Extracted only {len(text_cleaned)} characters."
             )
         
         path = Path(file_path)
