@@ -1,20 +1,21 @@
 import chromadb
-from chromadb.config import Settings
 from sentence_transformers import SentenceTransformer
 from typing import List, Dict
-from backend.config import config
+import os
 
 class VectorStore:
     def __init__(self):
-        self.client = chromadb.PersistentClient(path=config.CHROMA_PATH)
+        chroma_path = os.path.join(os.path.dirname(__file__), "..", "data", "chroma_db")
+        os.makedirs(chroma_path, exist_ok=True)
+        
+        self.client = chromadb.PersistentClient(path=chroma_path)
         self.collection = self.client.get_or_create_collection(
             name="documents",
             metadata={"hnsw:space": "cosine"}
         )
-        self.embedder = SentenceTransformer(config.EMBEDDING_MODEL)
+        self.embedder = SentenceTransformer("all-MiniLM-L6-v2")
     
     def add_documents(self, chunks: List[Dict]):
-        """Add document chunks to vector store"""
         texts = [chunk['text'] for chunk in chunks]
         embeddings = self.embedder.encode(texts).tolist()
         
@@ -29,7 +30,6 @@ class VectorStore:
         )
     
     def search(self, query: str, top_k: int = 20) -> List[Dict]:
-        """Semantic search using embeddings"""
         query_embedding = self.embedder.encode([query])[0].tolist()
         
         results = self.collection.query(
@@ -49,7 +49,6 @@ class VectorStore:
         return documents
     
     def clear(self):
-        """Clear all documents"""
         self.client.delete_collection("documents")
         self.collection = self.client.get_or_create_collection(
             name="documents",
