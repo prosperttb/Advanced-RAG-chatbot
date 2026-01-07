@@ -37,35 +37,5 @@ class HybridRetriever:
         
         return results
     
-    def reciprocal_rank_fusion(self, bm25_results: List[Dict], vector_results: List[Dict], k: int = 60) -> List[Dict]:
-        scores = {}
-        docs = {}
-        
-        for rank, doc in enumerate(bm25_results):
-            chunk_id = doc['chunk_id']
-            scores[chunk_id] = scores.get(chunk_id, 0) + 1 / (rank + k)
-            docs[chunk_id] = doc
-        
-        for rank, doc in enumerate(vector_results):
-            chunk_id = doc['chunk_id']
-            scores[chunk_id] = scores.get(chunk_id, 0) + 1 / (rank + k)
-            if chunk_id not in docs:
-                docs[chunk_id] = doc
-        
-        sorted_ids = sorted(scores.keys(), key=lambda x: scores[x], reverse=True)
-        
-        results = []
-        for chunk_id in sorted_ids:
-            doc = docs[chunk_id]
-            doc['rrf_score'] = scores[chunk_id]
-            results.append(doc)
-        
-        return results
-    
     def retrieve(self, query: str, top_k: int = 20) -> List[Dict]:
-        bm25_results = self.bm25_search(query, top_k)
-        vector_results = self.vector_store.search(query, top_k)
-        
-        fused_results = self.reciprocal_rank_fusion(bm25_results, vector_results)
-        
-        return fused_results[:top_k]
+        return self.bm25_search(query, top_k)
