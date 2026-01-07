@@ -4,9 +4,16 @@ import PyPDF2
 import docx
 from pathlib import Path
 from PIL import Image
-import pytesseract
+import os
 
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+try:
+    import pytesseract
+    tesseract_path = os.getenv("TESSERACT_PATH", r'C:\Program Files\Tesseract-OCR\tesseract.exe')
+    if os.path.exists(tesseract_path):
+        pytesseract.pytesseract.tesseract_cmd = tesseract_path
+    TESSERACT_AVAILABLE = True
+except ImportError:
+    TESSERACT_AVAILABLE = False
 
 class DocumentProcessor:
     def __init__(self, chunk_size: int = 800, chunk_overlap: int = 150):
@@ -44,12 +51,24 @@ class DocumentProcessor:
             return file.read()
     
     def _load_image(self, file_path: str) -> str:
+        if not TESSERACT_AVAILABLE:
+            return "OCR functionality is not available on this server. Image text extraction is disabled. Please upload PDF, DOCX, or TXT files for text-based content."
+        
         try:
+            import pytesseract
+            tesseract_cmd = getattr(pytesseract.pytesseract, 'tesseract_cmd', None)
+            if tesseract_cmd and not os.path.exists(tesseract_cmd):
+                return "OCR functionality is not available on this server. Image text extraction is disabled. Please upload PDF, DOCX, or TXT files for text-based content."
+            
             image = Image.open(file_path)
             text = pytesseract.image_to_string(image)
+            
+            if not text or len(text.strip()) < 10:
+                return "No text could be extracted from this image. The image may be blank, contain only graphics, or have low quality text."
+            
             return text
         except Exception as e:
-            raise ValueError(f"Failed to extract text from image: {str(e)}")
+            return f"OCR functionality is not available on this server. Image text extraction failed. Please upload PDF, DOCX, or TXT files for text-based content."
     
     def chunk_text(self, text: str, metadata: Dict = None) -> List[Dict]:
         text = re.sub(r'\s+', ' ', text).strip()
