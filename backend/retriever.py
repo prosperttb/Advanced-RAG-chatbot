@@ -1,39 +1,33 @@
 from rank_bm25 import BM25Okapi
 from typing import List, Dict
 import numpy as np
-from vector_store import VectorStore
-from config import config
 
 class HybridRetriever:
-    def __init__(self, vector_store: VectorStore):
+    def __init__(self, vector_store):
         self.vector_store = vector_store
         self.bm25_index = None
         self.bm25_corpus = []
         self.bm25_metadata = []
     
     def build_bm25_index(self, chunks: List[Dict]):
-        """Build BM25 index from chunks"""
         self.bm25_corpus = [chunk['text'] for chunk in chunks]
         self.bm25_metadata = chunks
         
-        # Tokenize for BM25
         tokenized_corpus = [doc.lower().split() for doc in self.bm25_corpus]
         self.bm25_index = BM25Okapi(tokenized_corpus)
     
     def bm25_search(self, query: str, top_k: int = 20) -> List[Dict]:
-        """Keyword search using BM25"""
         if not self.bm25_index:
             return []
         
         tokenized_query = query.lower().split()
         scores = self.bm25_index.get_scores(tokenized_query)
         
-        # Get top-k indices
         top_indices = np.argsort(scores)[-top_k:][::-1]
         
         results = []
         for idx in top_indices:
-            if scores[idx] > 0:  # Only include relevant results
+            if scores[idx] > 0:
                 results.append({
                     'text': self.bm25_corpus[idx],
                     'metadata': self.bm25_metadata[idx]['metadata'],
@@ -43,36 +37,23 @@ class HybridRetriever:
         
         return results
     
-    def reciprocal_rank_fusion(
-        self, 
-        bm25_results: List[Dict], 
-        vector_results: List[Dict],
-        k: int = 60
-    ) -> List[Dict]:
-        """
-        Combine BM25 and vector search results using RRF
-        """
-        # Create score dictionaries
+    def reciprocal_rank_fusion(self, bm25_results: List[Dict], vector_results: List[Dict], k: int = 60) -> List[Dict]:
         scores = {}
         docs = {}
         
-        # Add BM25 scores
         for rank, doc in enumerate(bm25_results):
             chunk_id = doc['chunk_id']
             scores[chunk_id] = scores.get(chunk_id, 0) + 1 / (rank + k)
             docs[chunk_id] = doc
         
-        # Add vector search scores
         for rank, doc in enumerate(vector_results):
             chunk_id = doc['chunk_id']
             scores[chunk_id] = scores.get(chunk_id, 0) + 1 / (rank + k)
             if chunk_id not in docs:
                 docs[chunk_id] = doc
         
-        # Sort by combined score
         sorted_ids = sorted(scores.keys(), key=lambda x: scores[x], reverse=True)
         
-        # Return merged results
         results = []
         for chunk_id in sorted_ids:
             doc = docs[chunk_id]
@@ -81,21 +62,10 @@ class HybridRetriever:
         
         return results
     
-    def retrieve(self, query: str, top_k: int = None) -> List[Dict]:
-        """
-        Hybrid retrieval: BM25 + Vector Search + RRF
-        """
-        if top_k is None:
-            top_k = config.TOP_K_RETRIEVAL
-        
-        # Get results from both methods
+    def retrieve(self, query: str, top_k: int = 20) -> List[Dict]:
         bm25_results = self.bm25_search(query, top_k)
         vector_results = self.vector_store.search(query, top_k)
         
-        # Fuse results
-        fused_results = self.reciprocal_rank_fusion(
-            bm25_results, 
-            vector_results
-        )
+        fused_results = self.reciprocal_rank_fusion(bm25_results, vector_results)
         
         return fused_results[:top_k]
