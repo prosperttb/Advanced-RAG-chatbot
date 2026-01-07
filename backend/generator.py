@@ -1,13 +1,16 @@
 from groq import Groq
 from typing import List, Dict, Tuple
-from config import config
 import json
 import re
+import os
 
 class Generator:
     def __init__(self):
-        self.client = Groq(api_key=config.GROQ_API_KEY)
-        self.model = config.GROQ_MODEL
+        api_key = os.getenv("GROQ_API_KEY")
+        if not api_key:
+            raise ValueError("GROQ_API_KEY environment variable not set")
+        self.client = Groq(api_key=api_key)
+        self.model = "llama-3.3-70b-versatile"
     
     def generate_answer(self, query: str, context_docs: List[Dict]) -> str:
         if not context_docs or all(len(doc['text'].strip()) < 10 for doc in context_docs):
@@ -100,7 +103,8 @@ Respond in JSON format:
         
         is_grounded, confidence, explanation = self.verify_answer(query, answer, context_docs)
         
-        if confidence < config.CONFIDENCE_THRESHOLD:
+        confidence_threshold = int(os.getenv("CONFIDENCE_THRESHOLD", 7))
+        if confidence < confidence_threshold:
             answer = f"I don't have enough information in the provided documents to answer this confidently. Based on limited context: {answer}"
         
         return {
